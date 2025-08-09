@@ -115,7 +115,6 @@ public class SystemUserServiceImpl implements SystemUserService {
                     .build();
             otpRepo.save(createdOtp);
             // send email
-
         }
 
     }
