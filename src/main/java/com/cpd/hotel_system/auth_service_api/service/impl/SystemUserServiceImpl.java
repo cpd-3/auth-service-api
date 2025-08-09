@@ -6,6 +6,7 @@ import com.cpd.hotel_system.auth_service_api.config.KeycloakSecurityUtil;
 import com.cpd.hotel_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.cpd.hotel_system.auth_service_api.entity.SystemUser;
 import com.cpd.hotel_system.auth_service_api.exception.DuplicateEntryException;
+import com.cpd.hotel_system.auth_service_api.exception.EntryNotFoundException;
 import com.cpd.hotel_system.auth_service_api.repo.OtpRepo;
 import com.cpd.hotel_system.auth_service_api.repo.SystemUserRepo;
 import com.cpd.hotel_system.auth_service_api.service.EmailService;
@@ -211,4 +212,40 @@ public class SystemUserServiceImpl implements SystemUserService {
        }
     }
     }
+
+    @Override
+    public void resend(String email, String type) {
+        try{
+            Optional<SystemUser> selectedUser = systemUserRepo.findByEmail(email);
+            if(selectedUser.isEmpty()){
+                throw new EntryNotFoundException("unable to find any users associated with the provided email address");
+            }
+
+            SystemUser systemUser = selectedUser.get();
+
+            if(type.equalsIgnoreCase("SIGNUP")){
+                if(systemUser.isEmailVerified()){
+                    throw new DuplicateEntryException("The email is already activated");
+                }
+            }
+
+            Otp selectedOtpObj = systemUser.getOtp();
+                String code = otpGenerator.generateOtp(5);
+
+                emailService.sendUserSignupVerificationCode(systemUser.getEmail(), "verify your email", code, systemUser.getFirstName());
+
+                selectedOtpObj.setAttempts(0);
+                selectedOtpObj.setCode(code);
+                selectedOtpObj.setIsVerified(false);
+                selectedOtpObj.setUpdatedAt(new Date().toInstant());
+                otpRepo.save(selectedOtpObj);
+            
+
+        }catch(Exception e){
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+
+
 }
