@@ -3,6 +3,7 @@ package com.cpd.hotel_system.auth_service_api.service.impl;
 import com.cpd.hotel_system.auth_service_api.entity.Otp;
 import com.cpd.hotel_system.auth_service_api.exception.BadRequestException;
 import com.cpd.hotel_system.auth_service_api.config.KeycloakSecurityUtil;
+import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.cpd.hotel_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.cpd.hotel_system.auth_service_api.entity.SystemUser;
 import com.cpd.hotel_system.auth_service_api.exception.DuplicateEntryException;
@@ -15,6 +16,7 @@ import com.cpd.hotel_system.auth_service_api.util.OtpGenerator;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -317,6 +319,36 @@ public class SystemUserServiceImpl implements SystemUserService {
        }catch(Exception e){
         return false;
        }
+    }
+
+    @Override
+    public boolean passwordReset(PasswordRequestDto dto) {
+
+        Optional<SystemUser> selectedUserObj = systemUserRepo.findByEmail(dto.getEmail());
+            if(selectedUserObj.isPresent()){
+            
+                SystemUser systemUser = selectedUserObj.get();
+                Otp otpObj = systemUser.getOtp();
+                Keycloak keycloak = keycloakUtil.getKeycloakInstance();
+                List<UserRepresentation> keyCloakUsers = keycloak.realm(realm).users().search(systemUser.getEmail());
+                if(!keyCloakUsers.isEmpty() && otpObj.getCode().equals(dto.getCode())){
+                    UserRepresentation keyCloakUser = keyCloakUsers.get(0);
+                    UserResource userResource = keycloak.realm(realm).users().get(keyCloakUser.getId());
+                    CredentialRepresentation newPass = new CredentialRepresentation();
+                    newPass.setType(CredentialRepresentation.PASSWORD);
+                    newPass.setValue(dto.getPassword());
+                    newPass.setTemporary(false);
+                    userResource.resetPassword(newPass);
+
+                    systemUser.setUpdatedAt(new Date().toInstant());
+                    systemUserRepo.save(systemUser);
+
+                    return true;
+                }
+                throw new BadRequestException("try again");
+            }
+            throw new EntryNotFoundException("unable to find!");
+     
     }
 
 
