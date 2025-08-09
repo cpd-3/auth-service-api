@@ -351,6 +351,63 @@ public class SystemUserServiceImpl implements SystemUserService {
      
     }
 
+    @Override
+    public boolean verifyEmail(String otp, String email) {
+        Optional<SystemUser> selectedUserObj = systemUserRepo.findByEmail(email);
+        if(selectedUserObj.isEmpty()){
+            throw new EntryNotFoundException("cant find the associated user");
+        }
+        SystemUser systemUser = selectedUserObj.get();
+        Otp otpObj = systemUser.getOtp();
+
+        if(otpObj.getIsVerified()){
+            throw new BadRequestException("this otp has been used");
+        }
+
+        if(otpObj.getAttempts()>=5){
+            resend(email, "SIGNUP");
+            return false;
+        }
+
+        if(otpObj.getCode().equals(otp)){
+            UserRepresentation keycloakUser = keycloakUtil.getKeycloakInstance().realm(realm)
+            .users()
+            .search(email)
+            .stream()
+            .findFirst()
+            .orElseThrow(()->new EntryNotFoundException("user not found"));
+
+            keycloakUser.setEmailVerified(true);
+            keycloakUser.setEnabled(true);
+
+            keycloakUtil.getKeycloakInstance().realm(realm)
+            .users().get(keycloakUser.getId()).update(keycloakUser);
+
+            systemUser.setEmailVerified(true);
+            systemUser.setEnabled(true);
+            systemUser.setActive(true);
+
+            systemUserRepo.save(systemUser);
+
+            otpObj.setIsVerified(true);
+            otpObj.setAttempts(otpObj.getAttempts()+1);
+
+            otpRepo.save(otpObj);
+
+            return true;
+        }else{
+            if (otpObj.getAttempts()>=5) {
+                resend(email, "SIGNUP");
+                return false;
+            }
+
+            otpObj.setAttempts(otpObj.getAttempts()+1);
+            otpRepo.save(otpObj);
+        }
+        return false;
+
+    }
+
 
 
 }
