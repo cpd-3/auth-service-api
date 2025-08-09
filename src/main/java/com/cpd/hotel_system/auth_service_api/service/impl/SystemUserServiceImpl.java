@@ -445,9 +445,5 @@ public class SystemUserServiceImpl implements SystemUserService {
          RestTemplate restTemplate = new RestTemplate();
          ResponseEntity<Object> response = restTemplate.postForEntity("key cloak api url", requestBody, Object.class);
          return response.getBody();
-
     }
-
-    
-
 }
