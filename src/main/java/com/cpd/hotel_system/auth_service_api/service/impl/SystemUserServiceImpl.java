@@ -93,6 +93,7 @@ public class SystemUserServiceImpl implements SystemUserService {
                     .keycloakId(createdUser.getId())
                     .firstName(dto.getFirstName())
                     .lastName(dto.getLastName())
+                    .email(dto.getEmail())
                     .contact(dto.getContact())
                     .isActive(false)
                     .isAccountNonExpired(true)
