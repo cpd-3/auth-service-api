@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cpd.hotel_system.auth_service_api.config.JwtService;
@@ -32,6 +33,18 @@ public class UserController {
         return new ResponseEntity<>(
             new StandardResponseDto(201,"user account was created",null),
             HttpStatus.CREATED
+        );
+    }
+
+    @PostMapping("/visitors/resend")
+    public ResponseEntity<StandardResponseDto> resend(
+        @RequestParam String email,
+        @RequestParam String type
+    ) throws IOException{
+        systemUserService.resend(email, type);
+        return new ResponseEntity<>(
+            new StandardResponseDto(200,"please check you email",null),
+            HttpStatus.OK
         );
     }
 
