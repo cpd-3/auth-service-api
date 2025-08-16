@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cpd.hotel_system.auth_service_api.config.JwtService;
 import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
+import com.cpd.hotel_system.auth_service_api.dto.request.RequestLoginDto;
 import com.cpd.hotel_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.cpd.hotel_system.auth_service_api.service.SystemUserService;
 import com.cpd.hotel_system.auth_service_api.util.StandardResponseDto;
@@ -82,6 +83,31 @@ public class UserController {
         return new ResponseEntity<>(
             new StandardResponseDto(isChanged?201:400,isChanged?"CHANGED":"try Again",isChanged),
             isChanged?HttpStatus.CREATED:HttpStatus.BAD_REQUEST
+        );
+    }
+
+   
+    @PostMapping("/visitors/verify-email")
+    public ResponseEntity<StandardResponseDto> verifyEmail(
+        @RequestParam String email,
+        @RequestParam String otp
+    ) throws IOException{
+
+        boolean isVerified = systemUserService.verifyEmail(otp,email);
+        return new ResponseEntity<>(
+            new StandardResponseDto(isVerified?200:400,isVerified?"Verified":"try Again",isVerified),
+            isVerified?HttpStatus.OK:HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @PostMapping("/visitors/login")
+    public ResponseEntity<StandardResponseDto> login(
+        @RequestBody RequestLoginDto dto
+    ) throws IOException{
+
+        return new ResponseEntity<>(
+            new StandardResponseDto(200,"success",systemUserService.userLogin(dto)),
+            HttpStatus.OK
         );
     }
 
