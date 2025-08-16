@@ -47,7 +47,7 @@ public class JwtService {
             .build().parseClaimsJws(token);
 
             Claims body = claimsJwt.getBody();
-            Map<String, List<String>> realmAccess = (Map<String, List<String>>) body.get("realm_access"));
+            Map<String, List<String>> realmAccess = (Map<String, List<String>>) body.get("realm_access");
             return realmAccess.get("roles");
         }catch(Exception e){
             throw new RuntimeException();

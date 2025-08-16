@@ -1,7 +1,6 @@
 package com.cpd.hotel_system.auth_service_api.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
