@@ -48,4 +48,15 @@ public class UserController {
         );
     }
 
+    @PostMapping("/visitors/forgot-password-request-code")
+    public ResponseEntity<StandardResponseDto> forgotPasswordRequest(
+        @RequestParam String email
+    ) throws IOException{
+        systemUserService.forgotPasswordSendVerificationCode(email);
+        return new ResponseEntity<>(
+            new StandardResponseDto(200,"please check you email",null),
+            HttpStatus.OK
+        );
+    }
+
 }
