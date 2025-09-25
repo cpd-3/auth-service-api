@@ -20,6 +20,7 @@ public class SecurityConfig {
     @Autowired
     JwtAuthConverter authConverter;
 
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(autherize->{

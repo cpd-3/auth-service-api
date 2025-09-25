@@ -1,15 +1,14 @@
-package com.api;
+package com.cpd.hotel_system.auth_service_api.api;
 
 
 import java.io.IOException;
 
+import com.cpd.hotel_system.auth_service_api.dto.request.UserUpdateRequestDto;
+import com.cpd.hotel_system.auth_service_api.dto.response.ResponseUserDetailsDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import com.cpd.hotel_system.auth_service_api.config.JwtService;
 import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
@@ -108,6 +107,41 @@ public class UserController {
         return new ResponseEntity<>(
             new StandardResponseDto(200,"success",systemUserService.userLogin(dto)),
             HttpStatus.OK
+        );
+    }
+
+    @GetMapping("/get-user-details")
+    @PreAuthorize("hasAnyRole('user','admin')")
+    public ResponseEntity<StandardResponseDto> getUserDetails(
+            @RequestHeader("Authorization") String tokenHeader
+    ) {
+        String token = tokenHeader.replace("Bearer ", "");
+        String email = jwtService.getEmail(token);
+
+        ResponseUserDetailsDto userDetails = systemUserService.getUserDetails(email);
+
+        return new ResponseEntity<>(
+                new StandardResponseDto(200,
+                        "user details!", userDetails),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/update-user-details")
+    @PreAuthorize("hasAnyRole('user','admin')")
+    public ResponseEntity<StandardResponseDto> updateUserDetails(
+            @RequestHeader("Authorization") String tokenHeader,
+            @RequestBody UserUpdateRequestDto dto
+    ) {
+        String token = tokenHeader.replace("Bearer ", "");
+        String email = jwtService.getEmail(token);
+
+        systemUserService.updateUserDetails(email,dto);
+
+        return new ResponseEntity<>(
+                new StandardResponseDto(201,
+                        "user details updated!", null),
+                HttpStatus.CREATED
         );
     }
 

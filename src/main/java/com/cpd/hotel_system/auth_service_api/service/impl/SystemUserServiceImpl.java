@@ -1,6 +1,9 @@
 package com.cpd.hotel_system.auth_service_api.service.impl;
 
+import com.cpd.hotel_system.auth_service_api.dto.request.UserUpdateRequestDto;
+import com.cpd.hotel_system.auth_service_api.dto.response.ResponseUserDetailsDto;
 import com.cpd.hotel_system.auth_service_api.entity.Otp;
+import com.cpd.hotel_system.auth_service_api.entity.SystemAvatar;
 import com.cpd.hotel_system.auth_service_api.exception.BadRequestException;
 import com.cpd.hotel_system.auth_service_api.config.KeycloakSecurityUtil;
 import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
@@ -14,6 +17,7 @@ import com.cpd.hotel_system.auth_service_api.repo.OtpRepo;
 import com.cpd.hotel_system.auth_service_api.repo.SystemUserRepo;
 import com.cpd.hotel_system.auth_service_api.service.EmailService;
 import com.cpd.hotel_system.auth_service_api.service.SystemUserService;
+import com.cpd.hotel_system.auth_service_api.util.FileDataExtractor;
 import com.cpd.hotel_system.auth_service_api.util.OtpGenerator;
 
 import jakarta.ws.rs.core.Response;
@@ -43,8 +47,20 @@ import java.util.*;
 public class SystemUserServiceImpl implements SystemUserService {
 
     private final OtpRepo otpRepo;
+    private final FileDataExtractor fileDataExtractor;
     @Value("${keycloak.config.realm}")
     private String realm;
+
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.token-uri}")
+    private String KeyCloakApiUrl;
+
+    @Value("${keycloak.config.client-id}")
+    private String clientId;
+
+    @Value("${keycloak.config.secret}")
+    private String secret;
+
 
     private final SystemUserRepo systemUserRepo;
     private final OtpRepo repo;
@@ -87,6 +103,7 @@ public class SystemUserServiceImpl implements SystemUserService {
         } else {
             Optional<SystemUser> selectedSystemUserFromAuthService =
                     systemUserRepo.findByEmail(dto.getEmail());
+
             if (selectedSystemUserFromAuthService.isPresent()) {
                 Optional<Otp> selectedOtp =
                         otpRepo.findBySystemUserId(selectedSystemUserFromAuthService.get().getUserId());
@@ -129,6 +146,7 @@ public class SystemUserServiceImpl implements SystemUserService {
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .isVerified(false)
+                    .systemUser(savedUser)
                     .attempts(0)
                     .build();
             otpRepo.save(createdOtp);
@@ -434,16 +452,45 @@ public class SystemUserServiceImpl implements SystemUserService {
          }
 
          MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
-         requestBody.add("client_id", "");
+         requestBody.add("client_id", clientId);
          requestBody.add("grant_type", OAuth2Constants.PASSWORD);
          requestBody.add("username", dto.getEmail());
-         requestBody.add("client_secret", "");
+         requestBody.add("client_secret", secret);
          requestBody.add("password", dto.getPassword());
          
          HttpHeaders headers = new HttpHeaders();
          headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
          RestTemplate restTemplate = new RestTemplate();
-         ResponseEntity<Object> response = restTemplate.postForEntity("key cloak api url", requestBody, Object.class);
+         ResponseEntity<Object> response = restTemplate.postForEntity(KeyCloakApiUrl, requestBody, Object.class);
          return response.getBody();
+    }
+
+    @Override
+    public ResponseUserDetailsDto getUserDetails(String email) {
+        Optional<SystemUser> byEmail = systemUserRepo.findByEmail(email);
+        if (byEmail.isEmpty()) {
+            throw new EntryNotFoundException("User was not found");
+        }
+
+        SystemAvatar systemUserAvatar = byEmail.get().getSystemAvatar();
+
+        return ResponseUserDetailsDto.builder()
+                .email(byEmail.get().getEmail())
+                .firstName(byEmail.get().getFirstName())
+                .lastName(byEmail.get().getLastName())
+                .resourceUrl(systemUserAvatar != null ? fileDataExtractor.byteArrayToString(systemUserAvatar.getResourceUrl()) : null)
+                .build();
+    }
+
+    @Override
+    public void updateUserDetails(String email, UserUpdateRequestDto data) {
+        Optional<SystemUser> byEmail = systemUserRepo.findByEmail(email);
+        if (byEmail.isEmpty()) {
+            throw new EntryNotFoundException("User was not found");
+        }
+
+        byEmail.get().setFirstName(data.getFirstname());
+        byEmail.get().setLastName(data.getLastName());
+        systemUserRepo.save(byEmail.get());
     }
 }

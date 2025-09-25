@@ -6,6 +6,8 @@ import java.util.List;
 import com.cpd.hotel_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.cpd.hotel_system.auth_service_api.dto.request.RequestLoginDto;
 import com.cpd.hotel_system.auth_service_api.dto.request.SystemUserRequestDto;
+import com.cpd.hotel_system.auth_service_api.dto.request.UserUpdateRequestDto;
+import com.cpd.hotel_system.auth_service_api.dto.response.ResponseUserDetailsDto;
 
 public interface SystemUserService {
     public void createUser(SystemUserRequestDto dto) throws IOException;
@@ -16,4 +18,6 @@ public interface SystemUserService {
     public boolean passwordReset(PasswordRequestDto dto);
     public boolean verifyEmail(String otp, String email);
     public Object userLogin(RequestLoginDto dto);
+    public ResponseUserDetailsDto getUserDetails(String email);
+    public void updateUserDetails(String email, UserUpdateRequestDto data);
 }
